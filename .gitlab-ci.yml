@@ -1,0 +1,64 @@
+# 用于docker镜像（镜像）
+image: xxx
+
+# 用于docker镜像（使用的数据库）
+services:
+    - postgres
+
+# 定义构建变量；此处是全局变量（global-level）；这些变量可以被后续的命令和脚本使用；服务容器也可以使用YAML中定义的变量；
+# 变量也可以定义成job变量（job level）
+variables:
+    DATABASE_URL: "postgres://postgres@postgres/my_database"
+    # 可以通过设置GIT_STRATEGY用于获取最新的代码，可以再全局variables或者是在单个job的variables模块中设置。如果没有设置，将从项目中使用默认值。
+    # 可以设置的值有：clone，fetch，和none。
+    # clone是最慢的选项。它会从头开始克隆整个仓库，包含每一个job，以确保项目工作区是最原始的。
+    # 当重新使用项目工作区时，fetch是更快（如果不存在则返回克隆）。git clean用于撤销上一个job做的任何改变，git fetch用于获取上一个job到现在的的commit。
+    # none也是重新使用项目工作区，但是它会跳过所有的Git操作（包括GitLab Runner前的克隆脚本，如果存在的话）。它主要用在操作job的artifacts（例如：deploy）。Git数据仓库肯定是存在的，但是他肯定不是最新的，所以你只能依赖于从项目工作区的缓存或者是artifacts带来的文件。
+    GIT_STRATEGY: 'fetch'
+
+
+# 定义在每个job之前运行的命令；可以是一个数组或者是多行字符串
+before_script:
+    - bundle install
+
+# 定义在每个job之后运行的命令；可以是一个数组或者是多行字符串
+after_script:
+    - rm secrets
+
+# 定义可以被job调用的stages
+# stages中的元素顺序决定了对应job的执行顺序：1. 相同stage的job可以平行执行。2. 下一个stage的job会在前一个stage的job成功后开始执行。
+# 这有两个特殊的例子值得一提：1. 如果.gitlab-ci.yml中没有定义stages，那么job's stages 会默认定义为 build，test 和 deploy；2. 如果一个job没有指定stage，那么这个任务会分配到test stage。
+stages:
+    - build
+    - test
+    - deploy
+
+job_name:
+    # job变量，当设置了job级别的关键字variables，它会覆盖全局YAML和预定义中的job变量。想要关闭全局变量可以在job中设置一个空数组
+    # ??? 什么下面一行存在，就报错？？？
+    # variables: []
+
+    # Runner执行的命令或脚本
+    script:
+        - rake spec
+        - coverage
+
+    # 定义job stage（默认：test）
+    # stage允许一组jobs进入不同的stages。jobs在相同的stage时会parallel同时进行。查阅stages更多的用法请查看stages。
+    stage: test
+
+    # 定义一列git分支，为其创建job
+    only:
+        - master
+
+    # 定义一列git分支，不创建job
+    except:
+        - develop
+
+    # tags可以从允许运行此项目的所有Runners中选择特定的Runners来执行jobs。（同时Runner也要设置tags）
+    tags:
+        - ruby
+        - postgres
+
+    # 允许job失败。失败的job不影响commit状态
+    allow_failure: true
