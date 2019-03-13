@@ -1,8 +1,8 @@
 出处：https://segmentfault.com/a/1190000010442764#articleHeader8
 
-* job 中的 tags 和 runner，什么关系？
+### job 中的 tags 和 runner，什么关系？
 
-* stages 和 job 中的 stage，什么关系？
+### stages 和 job 中的 stage，什么关系？
 1. job 中的 stage，属于 stages 中的一个
 2. 相同stage的job可以平行执行，下一个stage的job会在前一个stage的job成功后开始执行
 
